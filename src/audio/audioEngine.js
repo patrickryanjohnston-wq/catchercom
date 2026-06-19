@@ -17,6 +17,11 @@ import { setAudioSessionMode } from '../native/audioSession.js'
 const KEEPALIVE_FREQ_HZ = 19000 // ~inaudible to players, keeps the codec streaming
 const KEEPALIVE_GAIN = 0.0008 // ~ -62 dB: non-zero so hardware doesn't drop the link
 
+// Live push-to-talk is quieter than the TTS calls: iOS's .playAndRecord session outputs
+// lower than .playback, and raw mic level is modest. Boost the mic path to match. Bump
+// this up if live voice is still too quiet; back off toward 1.0 if it distorts/clips.
+const MIC_BOOST = 3.0
+
 class AudioEngine {
   constructor() {
     this.ctx = null
@@ -99,7 +104,12 @@ class AudioEngine {
       video: false,
     })
     const source = this.ctx.createMediaStreamSource(stream)
-    source.connect(this.ctx.destination)
+
+    // Boost the live voice so it's as loud as the TTS calls (see MIC_BOOST).
+    const gain = this.ctx.createGain()
+    gain.gain.value = MIC_BOOST
+    source.connect(gain)
+    gain.connect(this.ctx.destination)
 
     // Analyser tap (does not affect output) so the UI can show a live input level —
     // a quick way to confirm the mic is actually capturing.
@@ -115,7 +125,7 @@ class AudioEngine {
     sink.muted = true // muted so this element itself adds no second output path
     sink.play().catch(() => {})
 
-    this.mic = { stream, source, sink, analyser, buf: new Uint8Array(analyser.fftSize) }
+    this.mic = { stream, source, gain, sink, analyser, buf: new Uint8Array(analyser.fftSize) }
     this.talking = true
   }
 
@@ -139,6 +149,7 @@ class AudioEngine {
     }
     try {
       this.mic.source.disconnect()
+      if (this.mic.gain) this.mic.gain.disconnect()
       if (this.mic.sink) {
         this.mic.sink.pause()
         this.mic.sink.srcObject = null

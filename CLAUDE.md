@@ -57,12 +57,24 @@ repeat-last-call. Run with `npm run dev` (`host:true`, reachable from a phone on
   - `ios/App/App/Info.plist` — `NSMicrophoneUsageDescription` + `UIBackgroundModes: audio`.
 - Build/run helper: `eval "$(/opt/homebrew/bin/brew shellenv)"` to get `pod` on PATH.
 
-**Next (needs the user + GUI Xcode):** in Xcode, App target → Signing & Capabilities →
-select the Greenlearner LLC **Team** (fix bundle id if it collides); plug in the iPhone,
-trust it + enable Developer Mode; pick the device and Run. Then verify on device:
-first-call latency (keep-alive on/off), and that PTT keeps A2DP (not muffled HFP).
-TODO to confirm on device: that the app-target `AudioSession` plugin is discovered by
-Capacitor at runtime (JS wrapper is guarded, so a miss fails soft).
+**RESOLVED — black screen was the Xcode 16 debug-dylib, NOT iOS 26.** Symptom: app worked
+when launched from Xcode (▶, debugger attached) but was BLACK when launched standalone
+(tapping the icon). Cause: Xcode 16 **Debug** builds install a stub that only runs with the
+debugger attached; standalone launch shows black. (iOS 26.5 phone + Xcode 16.4/iOS 18.5 SDK
+runs fine — the version gap was a red herring.) The web bundle was always correct.
+
+**FIX: install a Release build** (runs standalone). Confirmed working on the iOS 26.5 device.
+CLI recipe:
+`xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination
+'id=00008120-000C693E0E6B601E' -allowProvisioningUpdates -derivedDataPath /tmp/b` →
+`xcrun devicectl device install app --device 00008120-000C693E0E6B601E
+/tmp/b/Build/Products/Release-iphoneos/App.app`. (Or in Xcode: Edit Scheme → Run → set
+Build Configuration to Release, then ▶.) Debug builds via Xcode ▶ also work but only while
+tethered. For dugout/standalone use, ship Release.
+
+Tooling installed during debugging: `libimobiledevice`, `ios-webkit-debug-proxy` (brew).
+Note: a temporary yellow "HTML LOADED" diagnostic index.html + red bg was used and has been
+reverted; rebuild Release from the current clean tree.
 
 Not yet done: pre-recorded clips (Phase 4).
 
