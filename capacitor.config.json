@@ -1,0 +1,9 @@
+{
+  "appId": "com.greenlearner.pitchcall",
+  "appName": "PitchCall",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#0b1220"
+  }
+}
