@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host"
+    "preview": "vite preview --host",
+    "sync:ios": "cap sync ios && node scripts/register-ios-plugin.mjs",
+    "ios:release": "npm run build && npm run sync:ios"
   },
   "dependencies": {
     "@capacitor-community/keep-awake": "^8.0.1",

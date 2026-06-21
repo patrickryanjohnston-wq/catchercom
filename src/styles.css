@@ -166,8 +166,50 @@ body {
   font-style: italic;
 }
 
-.ptt-wrap {
+/* Slider + button pinned to the bottom together so the button never drifts. */
+.talk-section {
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.talk-volume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.talk-volume-label {
+  flex: 1;
+}
+.vol-btn {
+  border: 0;
+  border-radius: 12px;
+  background: var(--cell);
+  color: var(--text);
+  font-size: 1.6rem;
+  font-weight: 800;
+  width: 56px;
+  height: 48px;
+  line-height: 1;
+}
+.vol-btn:active {
+  background: var(--cell-active);
+}
+.vol-btn:disabled {
+  opacity: 0.4;
+}
+.talk-volume-val {
+  min-width: 44px;
+  text-align: center;
+  color: var(--text);
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ptt-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,27 +1,25 @@
-// Native iOS audio-session control (ARCHITECTURE.md §5). This is the seam the Swift
-// plugin plugs into; on the web prototype every call is a no-op.
-//
-// The hard requirement (§5): keep high-quality A2DP *output* to the Bluetooth earpiece
-// while recording from the *phone* mic for push-to-talk — without iOS falling back to
-// the low-quality HFP headset profile (which would also capture the earpiece's mic).
-//
-//   - 'playback'     → category .playback + .allowBluetoothA2DP (soundboard only)
-//   - 'playAndRecord'→ .playAndRecord + [.allowBluetoothA2DP, .defaultToSpeaker],
-//                      NO .allowBluetooth, then setPreferredInput(built-in mic)
-//
-// The Swift implementation lives in native-ios/AudioSessionPlugin.swift and is wired up
-// after `npx cap add ios`. See native-ios/README.md.
+// Native push-to-talk bridge (ARCHITECTURE.md §5/§6). On iOS the mic is captured natively
+// (AudioSessionPlugin) so the Bluetooth link stays output-only A2DP and capture comes from
+// the phone's built-in mic — the web view's getUserMedia never touches the mic. On the web
+// prototype these are no-ops and the engine falls back to the Web Audio path.
 
 import { Capacitor, registerPlugin } from '@capacitor/core'
 
 const AudioSession = registerPlugin('AudioSession')
 
-/** mode: 'playback' | 'playAndRecord' */
-export async function setAudioSessionMode(mode) {
-  if (!Capacitor.isNativePlatform()) return // browser: OS handles routing
-  try {
-    await AudioSession.setMode({ mode })
-  } catch {
-    // plugin not present yet (pre-wrap) — non-fatal
-  }
+export function isNativeAudio() {
+  return Capacitor.isNativePlatform()
+}
+
+/** Start native mic passthrough at the given boost. Resolves to {input, output} route. */
+export function startNativeMic(boost) {
+  return AudioSession.startMic({ boost })
+}
+
+export function stopNativeMic() {
+  return AudioSession.stopMic()
+}
+
+export function setNativeBoost(boost) {
+  return AudioSession.setBoost({ boost })
 }

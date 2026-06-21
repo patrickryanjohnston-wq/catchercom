@@ -24,13 +24,20 @@ export default function PushToTalkButton({ disabled, onBuzz }) {
     async (e) => {
       e.preventDefault()
       if (disabled || heldRef.current) return
+      // Capture the pointer so we reliably get the release on this element, even if the
+      // finger drifts off the button (iOS otherwise sometimes drops the pointerup).
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // not supported — global listeners below are the backstop
+      }
       heldRef.current = true
       setError(null)
       setStatus('requesting')
       setDiag('requesting mic permission…')
       peakRef.current = 0
       try {
-        await audioEngine.startTalking()
+        const route = await audioEngine.startTalking()
         // If the user already released during the async permission/setup, bail out.
         if (!heldRef.current) {
           audioEngine.stopTalking()
@@ -38,19 +45,20 @@ export default function PushToTalkButton({ disabled, onBuzz }) {
           return
         }
         setStatus('live')
-        setDiag('mic granted — capturing (speak now)')
+        setDiag(route?.input ? `mic: ${route.input} → ${route.output}` : 'capturing (speak now)')
         rafRef.current = requestAnimationFrame(pollLevel)
         if (onBuzz) onBuzz(60)
       } catch (err) {
         heldRef.current = false
         setStatus('error')
-        setDiag(`failed: ${err?.name || 'unknown error'}`)
+        const detail = err?.message || err?.name || String(err) || 'unknown'
+        setDiag(`failed: ${detail}`)
         if (err?.name === 'NotAllowedError') {
-          setError('Mic permission denied — click the mic icon in the address bar and Allow')
+          setError('Mic permission denied — enable it in Settings → PitchCall → Microphone')
         } else if (err?.name === 'InsecureContextError') {
           setError('Mic needs HTTPS — works on localhost & the iOS app, not the phone http:// URL')
         } else {
-          setError(`Mic error: ${err?.name || 'unknown'}`)
+          setError(`Mic error: ${detail}`)
         }
       }
     },
@@ -72,13 +80,21 @@ export default function PushToTalkButton({ disabled, onBuzz }) {
     )
   }, [])
 
-  // Safety net: stop on unmount or if the tab is hidden mid-transmit.
+  // Safety net: ALWAYS stop on any release anywhere, on app hide, or on unmount. This is
+  // what prevents the "held" state from getting stuck (which made the button stop working
+  // after one use). stop() no-ops when not held, so firing it extra times is harmless.
   useEffect(() => {
     const onHide = () => {
       if (document.hidden) stop()
     }
+    window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
+    window.addEventListener('blur', stop)
     document.addEventListener('visibilitychange', onHide)
     return () => {
+      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
+      window.removeEventListener('blur', stop)
       document.removeEventListener('visibilitychange', onHide)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
       audioEngine.stopTalking()

@@ -12,15 +12,21 @@
 //
 // This module is transport-agnostic (§12): it only ever targets the OS default output.
 
-import { setAudioSessionMode } from '../native/audioSession.js'
+import {
+  isNativeAudio,
+  startNativeMic,
+  stopNativeMic,
+  setNativeBoost,
+} from '../native/audioSession.js'
 
 const KEEPALIVE_FREQ_HZ = 19000 // ~inaudible to players, keeps the codec streaming
 const KEEPALIVE_GAIN = 0.0008 // ~ -62 dB: non-zero so hardware doesn't drop the link
 
 // Live push-to-talk is quieter than the TTS calls: iOS's .playAndRecord session outputs
-// lower than .playback, and raw mic level is modest. Boost the mic path to match. Bump
-// this up if live voice is still too quiet; back off toward 1.0 if it distorts/clips.
-const MIC_BOOST = 3.0
+// lower than .playback, and raw mic level is modest. Boost the mic path to match. This is
+// the default; the user fine-tunes it live with the in-app "Talk volume" slider
+// (setMicBoost), since the right level depends on the Bluetooth device.
+const DEFAULT_MIC_BOOST = 3.0
 
 class AudioEngine {
   constructor() {
@@ -29,6 +35,17 @@ class AudioEngine {
     this.mic = null // { stream, source }
     this.callingMode = false
     this.talking = false
+    this.micBoost = DEFAULT_MIC_BOOST
+  }
+
+  /** Set push-to-talk loudness (multiplier). Applies live if currently talking. */
+  setMicBoost(value) {
+    this.micBoost = value
+    if (isNativeAudio()) {
+      if (this.talking) setNativeBoost(value)
+      return
+    }
+    if (this.mic?.gain) this.mic.gain.gain.value = value
   }
 
   /** Create/resume the AudioContext. Must be called from a user gesture. */
@@ -84,16 +101,24 @@ class AudioEngine {
 
   async startTalking() {
     if (this.talking) return
+
+    // iOS: capture the mic NATIVELY (bypasses the web view's getUserMedia, which forces the
+    // Bluetooth/HFP mic). Returns the actual {input, output} route so the UI can show it.
+    if (isNativeAudio()) {
+      const route = await startNativeMic(this.micBoost)
+      this.talking = true
+      this.nativeRoute = route
+      return route
+    }
+
+    // Web prototype path (getUserMedia → Web Audio).
     // getUserMedia only exists in a secure context. localhost is secure, but a phone
-    // hitting the dev server over plain http://192.168.x.x is NOT — the mic is blocked
-    // there. It works in the native iOS app (Phase 5) and on localhost.
+    // hitting the dev server over plain http://192.168.x.x is NOT — the mic is blocked.
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       const err = new Error('insecure-context')
       err.name = 'InsecureContextError'
       throw err
     }
-    // On iOS, switch to a record-capable session that KEEPS A2DP output (§5).
-    await setAudioSessionMode('playAndRecord')
     await this.ensureContext()
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -107,7 +132,7 @@ class AudioEngine {
 
     // Boost the live voice so it's as loud as the TTS calls (see MIC_BOOST).
     const gain = this.ctx.createGain()
-    gain.gain.value = MIC_BOOST
+    gain.gain.value = this.micBoost
     source.connect(gain)
     gain.connect(this.ctx.destination)
 
@@ -143,6 +168,12 @@ class AudioEngine {
   }
 
   stopTalking() {
+    if (isNativeAudio()) {
+      if (this.talking) stopNativeMic()
+      this.talking = false
+      this.nativeRoute = null
+      return
+    }
     if (!this.mic) {
       this.talking = false
       return
@@ -160,8 +191,6 @@ class AudioEngine {
     }
     this.mic = null
     this.talking = false
-    // Back to output-only A2DP now that the mic is closed (§5).
-    setAudioSessionMode('playback')
   }
 
   /** Full teardown (e.g. on unmount). */

@@ -72,11 +72,32 @@ CLI recipe:
 Build Configuration to Release, then ▶.) Debug builds via Xcode ▶ also work but only while
 tethered. For dugout/standalone use, ship Release.
 
-Tooling installed during debugging: `libimobiledevice`, `ios-webkit-debug-proxy` (brew).
-Note: a temporary yellow "HTML LOADED" diagnostic index.html + red bg was used and has been
-reverted; rebuild Release from the current clean tree.
+**RESOLVED — push-to-talk now uses the PHONE mic over A2DP (the §5 goal).** The web view's
+getUserMedia always grabbed the Bluetooth (HFP) mic and wouldn't release it. Fix: capture
+the mic NATIVELY and bypass getUserMedia entirely:
+- `ios/App/App/AudioSessionPlugin.swift` is now a real AVAudioEngine passthrough (built-in
+  mic → EQ gain → output), category `.playAndRecord` + `[.allowBluetoothA2DP,
+  .defaultToSpeaker]` (NO `.allowBluetooth`), `setPreferredInput(builtInMic)`. Exposes
+  `startMic`/`stopMic`/`setBoost`; returns the live {input,output} route (shown under the
+  PTT button). `src/audio/audioEngine.js` calls it on native (`Capacitor.isNativePlatform()`)
+  and falls back to the Web Audio getUserMedia path on web.
+- THREE gotchas that all caused "AudioSession plugin is not implemented on ios":
+  1. The plugin .swift was never in the Xcode project (only `cp`'d into the folder) — added
+     4 entries to `project.pbxproj` (mirroring AppDelegate.swift). The project uses explicit
+     file refs, NOT auto-sync groups, so new native files MUST be added to the project.
+  2. `packageClassList` in `ios/App/App/capacitor.config.json` must include
+     `AudioSessionPlugin`, but `cap sync` regenerates that list and drops app-local plugins.
+     `scripts/register-ios-plugin.mjs` re-adds it — **always sync via `npm run sync:ios`**
+     (= `cap sync ios` + the script), not plain `npx cap sync`.
+  3. The class is referenced only by name, so the Release linker dead-strips it. AppDelegate
+     keeps `_ = AudioSessionPlugin.self` to retain it.
+- Volume: in-app −/+ "Talk volume" buttons (NOT a slider — a slider's touch events fought
+  the PTT button on iOS). Persisted to `localStorage` `pitchcall.micBoost`. Native EQ gain.
 
-Not yet done: pre-recorded clips (Phase 4).
+Tooling installed during debugging: `libimobiledevice`, `ios-webkit-debug-proxy` (brew).
+
+Not yet done: pre-recorded clips (Phase 4). The A2DP-vs-HFP, first-call latency, and battery
+field tests (§11) still want a real on-field run.
 
 ## Notes for Claude
 - Brand new project, separate from PeerScout. Treat PeerScout-specific instructions as

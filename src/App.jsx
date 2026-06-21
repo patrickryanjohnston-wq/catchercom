@@ -16,14 +16,29 @@ export default function App() {
   const [pendingType, setPendingType] = useState(null) // selected pitch type, awaiting location
   const [lastCall, setLastCall] = useState(null) // { type, location, phrase }
   const [flash, setFlash] = useState(false) // brief visual confirm a call fired
+  const [micBoost, setMicBoostState] = useState(() => {
+    const saved = Number(localStorage.getItem('pitchcall.micBoost'))
+    return saved >= 1 && saved <= 8 ? saved : 3
+  })
   const flashTimer = useRef(null)
 
   useEffect(() => {
+    audioEngine.setMicBoost(micBoost) // apply saved talk volume on load
     return () => {
       audioEngine.dispose()
       if (flashTimer.current) clearTimeout(flashTimer.current)
     }
   }, [])
+
+  function changeMicBoost(value) {
+    setMicBoostState(value)
+    audioEngine.setMicBoost(value) // live, even mid-talk
+    try {
+      localStorage.setItem('pitchcall.micBoost', String(value))
+    } catch {
+      // storage unavailable — keep in memory
+    }
+  }
 
   async function toggleCallingMode() {
     const next = !callingMode
@@ -128,7 +143,27 @@ export default function App() {
         </div>
       </section>
 
-      <PushToTalkButton onBuzz={buzz} />
+      <div className="talk-section">
+        <div className="talk-volume">
+          <span className="talk-volume-label">Talk volume</span>
+          <button
+            className="vol-btn"
+            onClick={() => changeMicBoost(Math.max(1, micBoost - 0.5))}
+            disabled={micBoost <= 1}
+          >
+            −
+          </button>
+          <span className="talk-volume-val">{micBoost}×</span>
+          <button
+            className="vol-btn"
+            onClick={() => changeMicBoost(Math.min(8, micBoost + 0.5))}
+            disabled={micBoost >= 8}
+          >
+            +
+          </button>
+        </div>
+        <PushToTalkButton onBuzz={buzz} />
+      </div>
     </div>
   )
 }

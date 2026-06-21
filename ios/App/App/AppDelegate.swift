@@ -8,6 +8,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Keep our app-local Capacitor plugin from being dead-stripped: it's only referenced
+        // by name (packageClassList), so without a direct reference the Release linker drops
+        // it and Capacitor reports it "not implemented". This forces the linker to retain it.
+        _ = AudioSessionPlugin.self
+
         // Base audio session (ARCHITECTURE.md §5): output-only, high-quality A2DP to the
         // Bluetooth earpiece, and plays regardless of the physical mute/silent switch.
         // Push-to-talk later switches to .playAndRecord via AudioSessionPlugin.
