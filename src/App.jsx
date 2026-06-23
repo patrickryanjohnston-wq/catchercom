@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { loadConfig } from './config/storage.js'
+import { loadConfig, saveConfig } from './config/storage.js'
 import { audioEngine } from './audio/audioEngine.js'
 import { speak, callPhrase } from './audio/speech.js'
+import { setVoicePrefs } from './audio/speech.js'
 import { setKeepAwake } from './native/keepAwake.js'
 import PushToTalkButton from './components/PushToTalkButton.jsx'
+import Settings from './components/Settings.jsx'
 
 // Light haptic on supported devices (no-op on desktop).
 function buzz(ms = 30) {
@@ -11,7 +13,8 @@ function buzz(ms = 30) {
 }
 
 export default function App() {
-  const [config] = useState(loadConfig)
+  const [config, setConfig] = useState(loadConfig)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [callingMode, setCallingMode] = useState(false)
   const [pendingType, setPendingType] = useState(null) // selected pitch type, awaiting location
   const [lastCall, setLastCall] = useState(null) // { type, location, phrase }
@@ -24,11 +27,21 @@ export default function App() {
 
   useEffect(() => {
     audioEngine.setMicBoost(micBoost) // apply saved talk volume on load
+    setVoicePrefs(config.voice) // apply saved voice + speed
     return () => {
       audioEngine.dispose()
       if (flashTimer.current) clearTimeout(flashTimer.current)
     }
   }, [])
+
+  // Update + persist config, and keep the speech engine in sync with the chosen voice/speed.
+  function updateConfig(next) {
+    setConfig(next)
+    saveConfig(next)
+    setVoicePrefs(next.voice)
+  }
+
+  const visiblePitches = config.pitchTypes.filter((p) => p.enabled)
 
   function changeMicBoost(value) {
     setMicBoostState(value)
@@ -82,9 +95,25 @@ export default function App() {
     buzz(40)
   }
 
+  if (settingsOpen) {
+    return (
+      <Settings
+        config={config}
+        onChange={updateConfig}
+        onClose={() => {
+          setPendingType(null) // a just-disabled pitch shouldn't stay armed
+          setSettingsOpen(false)
+        }}
+      />
+    )
+  }
+
   return (
     <div className={`app ${flash ? 'flash' : ''}`}>
       <header className="topbar">
+        <button className="menu-btn" onClick={() => setSettingsOpen(true)} aria-label="Menu">
+          ⚙
+        </button>
         <div className="brand">PitchCall</div>
         <button
           className={`calling-toggle ${callingMode ? 'on' : 'off'}`}
@@ -106,7 +135,7 @@ export default function App() {
           1 · Pitch {pendingType && <span className="armed">→ {pendingType.label}</span>}
         </h2>
         <div className="grid types">
-          {config.pitchTypes.map((t) => (
+          {visiblePitches.map((t) => (
             <button
               key={t.id}
               className={`cell type ${pendingType?.id === t.id ? 'armed' : ''}`}

@@ -1,20 +1,25 @@
-// Local data model (ARCHITECTURE.md §9). No DB — this is the default config a coach
-// can edit in-app. `clip` ids are reserved for Phase 4 (pre-recorded clips); the
-// prototype speaks `label` via Web Speech, so clips are unused for now.
+// Local data model (ARCHITECTURE.md §9). No DB — this is the default config a coach can
+// edit in-app (Settings menu). `pitchTypes` is the full CATALOG; `enabled` controls whether
+// a pitch shows on the main page, so the coach picks exactly which/how many appear.
 
 export const defaultConfig = {
   pitchTypes: [
-    { id: 'fb', label: 'Fastball', clip: 'type_fb' },
-    { id: 'cb', label: 'Curveball', clip: 'type_cb' },
-    { id: 'ch', label: 'Changeup', clip: 'type_ch' },
-    { id: 'sl', label: 'Slider', clip: 'type_sl' },
+    { id: 'fb', label: 'Fastball', enabled: true },
+    { id: 'cb', label: 'Curveball', enabled: true },
+    { id: 'ch', label: 'Changeup', enabled: true },
+    { id: 'sl', label: 'Slider', enabled: true },
+    { id: 'sp', label: 'Splitter', enabled: false },
+    { id: 'ct', label: 'Cutter', enabled: false },
+    { id: 'kn', label: 'Knuckleball', enabled: false },
   ],
   locations: [
-    { id: 'in', label: 'Inside', clip: 'loc_in' },
-    { id: 'out', label: 'Outside', clip: 'loc_out' },
-    { id: 'up', label: 'Up', clip: 'loc_up' },
-    { id: 'down', label: 'Down', clip: 'loc_down' },
+    { id: 'in', label: 'Inside' },
+    { id: 'out', label: 'Outside' },
+    { id: 'up', label: 'Up' },
+    { id: 'down', label: 'Down' },
   ],
   // "tts" | "compose" | "prerendered" — prototype ships on "tts".
   playbackMode: 'tts',
+  // Web Speech voice settings. name "" = auto-pick a natural male voice. rate = talking speed.
+  voice: { name: '', rate: 1.35 },
 }

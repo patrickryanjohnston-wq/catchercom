@@ -1,62 +1,72 @@
 // Web Speech playback for the prototype (ARCHITECTURE.md §7, option A).
 // Phase 4 swaps this for pre-recorded / composed clips behind the same speak() call.
 //
-// We pick a natural male voice and speak quickly. A specific/branded voice (e.g. a
-// celebrity style) can't come from the browser engine — that needs recorded or
-// AI-cloned clips (Phase 4).
+// Voice + speaking rate are user-configurable (Settings menu) via setVoicePrefs(). When no
+// voice is chosen, we auto-pick a natural male voice. A specific/branded voice can't come
+// from the browser engine — that needs recorded/AI-cloned clips (Phase 4).
 
-// Normal male voice, spoken quickly so calls land fast in the dugout.
-const VOICE_SETTINGS = {
-  rate: 1.35, // fast (range is 0.1–10, default 1)
-  pitch: 1.0, // natural (range is 0–2, default 1)
-  volume: 1.0,
-}
-
-// Natural male voices, best first. We match loosely by name across platforms.
+// Natural male voices to auto-pick from (best first), used when the user hasn't chosen one.
 const PREFERRED_VOICE_HINTS = [
-  'Reed (English (US))', // modern, natural US male (macOS)
+  'Reed (English (US))',
   'Rocko (English (US))',
   'Reed',
   'Rocko',
-  'Aaron', // macOS enhanced US male (if downloaded)
+  'Aaron',
   'Tom',
   'Eddy (English (US))',
-  'Daniel', // British male fallback
+  'Daniel',
   'Microsoft David',
   'Google US English',
 ]
 
-let chosenVoice = null
+let prefs = { name: '', rate: 1.35 } // updated from config via setVoicePrefs
 let warmedUp = false
 
-function pickVoice() {
-  if (!('speechSynthesis' in window)) return null
-  const voices = window.speechSynthesis.getVoices()
-  if (!voices.length) return null // not loaded yet
+/** All voices available on this device (for the Settings dropdown). */
+export function getVoices() {
+  if (!('speechSynthesis' in window)) return []
+  return window.speechSynthesis.getVoices()
+}
 
-  // 1) Try our preferred deep-male names in order.
+// iOS/macOS "novelty" voices (sound effects, not people) — hide these from the picker so
+// only human-named voices remain.
+const NON_PERSON_VOICES = new Set([
+  'albert', 'bad news', 'good news', 'bahh', 'bells', 'boing', 'bubbles', 'cellos',
+  'jester', 'organ', 'pipe organ', 'superstar', 'trinoids', 'whisper', 'wobble', 'zarvox',
+  'deranged', 'hysterical', 'pluto', 'junior', 'grandma', 'grandpa', 'princess',
+])
+
+function baseName(name) {
+  return name.split('(')[0].trim().toLowerCase() // "Reed (English (US))" -> "reed"
+}
+
+/** Human-named voices only, English first, then the rest — friendlier for the picker. */
+export function getPickableVoices() {
+  const named = getVoices().filter((v) => !NON_PERSON_VOICES.has(baseName(v.name)))
+  const en = named.filter((v) => /^en/i.test(v.lang))
+  const rest = named.filter((v) => !/^en/i.test(v.lang))
+  return [...en, ...rest]
+}
+
+export function setVoicePrefs(next) {
+  prefs = { ...prefs, ...(next || {}) }
+}
+
+function resolveVoice() {
+  const voices = getVoices()
+  if (!voices.length) return null
+  // 1) the user's explicit choice
+  if (prefs.name) {
+    const chosen = voices.find((v) => v.name === prefs.name)
+    if (chosen) return chosen
+  }
+  // 2) auto-pick a preferred natural male voice
   for (const hint of PREFERRED_VOICE_HINTS) {
     const v = voices.find((vo) => vo.name.toLowerCase().includes(hint.toLowerCase()))
     if (v) return v
   }
-  // 2) Otherwise any voice whose name hints "male".
-  const male = voices.find((vo) => /male/i.test(vo.name))
-  if (male) return male
-  // 3) Fall back to the first English voice, then the first of anything.
+  // 3) fall back to any English voice, then anything
   return voices.find((vo) => /^en/i.test(vo.lang)) || voices[0]
-}
-
-function ensureVoice() {
-  if (chosenVoice) return chosenVoice
-  chosenVoice = pickVoice()
-  return chosenVoice
-}
-
-// Voices load asynchronously in most browsers; refresh our pick when they arrive.
-if ('speechSynthesis' in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
-    chosenVoice = pickVoice()
-  }
 }
 
 /** Some engines clip the very first utterance of a session; speak an empty primer once. */
@@ -84,11 +94,11 @@ export function speak(text) {
   warmUp()
   window.speechSynthesis.cancel()
   const u = new SpeechSynthesisUtterance(text)
-  const v = ensureVoice()
+  const v = resolveVoice()
   if (v) u.voice = v
-  u.rate = VOICE_SETTINGS.rate
-  u.pitch = VOICE_SETTINGS.pitch
-  u.volume = VOICE_SETTINGS.volume
+  u.rate = prefs.rate || 1
+  u.pitch = 1.0
+  u.volume = 1.0
   window.speechSynthesis.speak(u)
 }
 
