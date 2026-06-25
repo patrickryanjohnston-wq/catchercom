@@ -1,6 +1,6 @@
 {
   "appId": "com.greenlearner.pitchcall",
-  "appName": "PitchCall",
+  "appName": "CatcherCom",
   "webDir": "dist",
   "ios": {
     "contentInset": "always",

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>PitchCall</string>
+        <string>CatcherCom</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,7 +48,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>PitchCall uses the microphone for live push-to-talk so you can speak to the catcher's earpiece.</string>
+	<string>CatcherCom uses the microphone for live push-to-talk so you can speak to the catcher's earpiece.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

@@ -54,7 +54,7 @@ export default function PushToTalkButton({ disabled, onBuzz }) {
         const detail = err?.message || err?.name || String(err) || 'unknown'
         setDiag(`failed: ${detail}`)
         if (err?.name === 'NotAllowedError') {
-          setError('Mic permission denied — enable it in Settings → PitchCall → Microphone')
+          setError('Mic permission denied — enable it in Settings → CatcherCom → Microphone')
         } else if (err?.name === 'InsecureContextError') {
           setError('Mic needs HTTPS — works on localhost & the iOS app, not the phone http:// URL')
         } else {

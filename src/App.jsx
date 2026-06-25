@@ -133,7 +133,7 @@ export default function App() {
         <button className="menu-btn" onClick={() => setSettingsOpen(true)} aria-label="Menu">
           ⚙
         </button>
-        <div className="brand">PitchCall</div>
+        <div className="brand">CatcherCom</div>
         <button
           className={`calling-toggle ${callingMode ? 'on' : 'off'}`}
           onClick={toggleCallingMode}
