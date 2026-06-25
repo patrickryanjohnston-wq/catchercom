@@ -43,6 +43,10 @@ export default function Settings({ config, onChange, onClose }) {
     onChange({ ...config, pitchTypes: config.pitchTypes.filter((x) => x.id !== id) })
   }
 
+  function setLocationMode(mode) {
+    onChange({ ...config, locationMode: mode })
+  }
+
   function setVoiceName(name) {
     onChange({ ...config, voice: { ...config.voice, name } })
   }
@@ -94,6 +98,30 @@ export default function Settings({ config, onChange, onClose }) {
             Add
           </button>
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h2>Location display</h2>
+        <p className="settings-hint">How the location buttons appear on the main page.</p>
+        <div className="seg">
+          <button
+            className={config.locationMode !== 'grid' ? 'active' : ''}
+            onClick={() => setLocationMode('simple')}
+          >
+            In / Out / Up / Down
+          </button>
+          <button
+            className={config.locationMode === 'grid' ? 'active' : ''}
+            onClick={() => setLocationMode('grid')}
+          >
+            9-box zone grid
+          </button>
+        </div>
+        {config.locationMode === 'grid' && (
+          <p className="settings-hint" style={{ marginTop: '10px', marginBottom: 0 }}>
+            A Righty/Lefty toggle appears on the main screen and flips inside/outside.
+          </p>
+        )}
       </section>
 
       <section className="settings-section">

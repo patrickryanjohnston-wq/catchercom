@@ -4,6 +4,7 @@ import { audioEngine } from './audio/audioEngine.js'
 import { speak, callPhrase } from './audio/speech.js'
 import { setVoicePrefs } from './audio/speech.js'
 import { setKeepAwake } from './native/keepAwake.js'
+import { ZONE_ROWS, ZONE_COLS, zoneSpoken, zoneLabel } from './config/zones.js'
 import PushToTalkButton from './components/PushToTalkButton.jsx'
 import Settings from './components/Settings.jsx'
 
@@ -23,6 +24,9 @@ export default function App() {
     const saved = Number(localStorage.getItem('pitchcall.micBoost'))
     return saved >= 1 && saved <= 8 ? saved : 3
   })
+  const [batterHand, setBatterHand] = useState(
+    () => localStorage.getItem('pitchcall.batterHand') || 'R',
+  )
   const flashTimer = useRef(null)
 
   useEffect(() => {
@@ -88,6 +92,21 @@ export default function App() {
     fireCall(pendingType, location)
   }
 
+  function changeHand(hand) {
+    setBatterHand(hand)
+    try {
+      localStorage.setItem('pitchcall.batterHand', hand)
+    } catch {
+      // storage unavailable — keep in memory
+    }
+    buzz(15)
+  }
+
+  function onPickZone(row, col) {
+    if (!pendingType) return
+    fireCall(pendingType, { id: `z${row}${col}`, label: zoneSpoken(row, col, batterHand) })
+  }
+
   function repeatLast() {
     if (!lastCall) return
     speak(lastCall.phrase)
@@ -149,18 +168,52 @@ export default function App() {
 
       <section className="panel">
         <h2 className="panel-title">2 · Location</h2>
-        <div className="grid locations">
-          {config.locations.map((l) => (
-            <button
-              key={l.id}
-              className="cell location"
-              disabled={!pendingType}
-              onClick={() => onPickLocation(l)}
-            >
-              {l.label}
-            </button>
-          ))}
-        </div>
+
+        {config.locationMode === 'grid' ? (
+          <>
+            <div className="hand-toggle">
+              <button
+                className={batterHand === 'R' ? 'active' : ''}
+                onClick={() => changeHand('R')}
+              >
+                Righty (RHB)
+              </button>
+              <button
+                className={batterHand === 'L' ? 'active' : ''}
+                onClick={() => changeHand('L')}
+              >
+                Lefty (LHB)
+              </button>
+            </div>
+            <div className="zone-grid">
+              {ZONE_ROWS.flatMap((row) =>
+                ZONE_COLS.map((col) => (
+                  <button
+                    key={`${row}-${col}`}
+                    className="zone-cell"
+                    disabled={!pendingType}
+                    onClick={() => onPickZone(row, col)}
+                  >
+                    {zoneLabel(row, col, batterHand)}
+                  </button>
+                )),
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="grid locations">
+            {config.locations.map((l) => (
+              <button
+                key={l.id}
+                className="cell location"
+                disabled={!pendingType}
+                onClick={() => onPickLocation(l)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="panel last-call">

@@ -316,6 +316,72 @@ body {
   opacity: 0.4;
 }
 
+/* Righty/Lefty toggle (grid mode) */
+.hand-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.hand-toggle button {
+  flex: 1;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cell);
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 12px 8px;
+}
+.hand-toggle button.active {
+  background: var(--accent);
+  color: #21160a;
+}
+
+/* 9-box strike-zone grid */
+.zone-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.zone-cell {
+  border: 0;
+  border-radius: 12px;
+  background: var(--cell);
+  color: var(--text);
+  font-size: 1.05rem;
+  font-weight: 700;
+  min-height: 76px;
+  padding: 8px 4px;
+  transition: transform 60ms ease, background 80ms ease;
+}
+.zone-cell:active {
+  transform: scale(0.96);
+  background: var(--cell-active);
+}
+.zone-cell:disabled {
+  opacity: 0.4;
+}
+
+/* Segmented control (Settings) */
+.seg {
+  display: flex;
+  gap: 8px;
+}
+.seg button {
+  flex: 1;
+  border: 0;
+  border-radius: 12px;
+  background: var(--cell);
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 14px 8px;
+}
+.seg button.active {
+  background: var(--go);
+  color: #04150d;
+}
+
 .last-call {
   display: flex;
   align-items: center;

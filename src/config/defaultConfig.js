@@ -18,6 +18,8 @@ export const defaultConfig = {
     { id: 'up', label: 'Up' },
     { id: 'down', label: 'Down' },
   ],
+  // "simple" = the In/Out/Up/Down list above; "grid" = the 3x3 strike-zone grid.
+  locationMode: 'simple',
   // "tts" | "compose" | "prerendered" — prototype ships on "tts".
   playbackMode: 'tts',
   // Web Speech voice settings. name "" = auto-pick a natural male voice. rate = talking speed.
