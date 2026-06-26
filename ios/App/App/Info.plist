@@ -47,6 +47,8 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>CatcherCom uses the microphone for live push-to-talk so you can speak to the catcher's earpiece.</string>
 	<key>UIBackgroundModes</key>
