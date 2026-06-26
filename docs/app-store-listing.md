@@ -48,17 +48,14 @@ rules before using CatcherCom in a game. It's always a great fit for practice an
 ## Keywords (max 100 chars, comma-separated)
 baseball,softball,catcher,pitch,coach,dugout,signs,signals,bullpen,pitching,calls,youth
 
-## Support URL (REQUIRED — you must provide one)
-A simple web page or contact page. Options:
-- Host the privacy policy page (docs/privacy-policy.html) somewhere and add a contact email,
-  then use that URL, OR
-- A free one-page site / Google Site with your support email.
+## Support URL (REQUIRED)
+https://patrickryanjohnston-wq.github.io/catchercom/
 
 ## Marketing URL (optional)
 Leave blank or link a simple site.
 
 ## Privacy Policy URL (REQUIRED)
-Wherever you host docs/privacy-policy.html (remember to fill in the contact email in it).
+https://patrickryanjohnston-wq.github.io/catchercom/privacy-policy.html
 
 ## Age Rating
 Answer "None" to every content question → results in **4+**.
